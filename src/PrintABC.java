@@ -8,11 +8,12 @@ import java.util.concurrent.Executors;
 public class PrintABC {
 	private static final int n = 5;
 	private static final String SEQUENCE = "ABC";
+	private static final int SEQUENCE_LENGTH = SEQUENCE.length();
 	private static int index = 0;
-	private volatile char currentLetter = 'A';
+	private volatile char currentLetter = SEQUENCE.charAt(index);
 	private final Object mon = new Object();
 
-	private static ExecutorService service = Executors.newFixedThreadPool(SEQUENCE.length());
+	private static final ExecutorService service = Executors.newFixedThreadPool(SEQUENCE_LENGTH);
 
 	public static void main(String[] args) {
 		PrintABC printABC = new PrintABC();
@@ -29,12 +30,12 @@ public class PrintABC {
 	public void print(char letter) {
 		synchronized (mon) {
 			try {
-				for (int i = 0; i < 5; i++) {
+				for (int i = 0; i < n; i++) {
 					while (currentLetter != letter) {
 						mon.wait();
 					}
 					System.out.print(letter);
-					if (index == SEQUENCE.length() - 1) {
+					if (index == SEQUENCE_LENGTH - 1) {
 						index = 0;
 					} else {
 						index++;
