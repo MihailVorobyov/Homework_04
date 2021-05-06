@@ -2,69 +2,45 @@
 // 1. Создать три потока, каждый из которых выводит определенную букву (A, B и C) 5 раз (порядок – ABСABСABС).
 // Используйте wait/notify/notifyAll.
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class PrintABC {
+	private static final int n = 5;
+	private static final String SEQUENCE = "ABC";
+	private static final int SEQUENCE_LENGTH = SEQUENCE.length();
+	private static int index = 0;
+	private volatile char currentLetter = SEQUENCE.charAt(index);
 	private final Object mon = new Object();
-	private volatile char currentLetter = 'A';
+
+	private static final ExecutorService service = Executors.newFixedThreadPool(SEQUENCE_LENGTH);
 
 	public static void main(String[] args) {
 		PrintABC printABC = new PrintABC();
-		Thread thread1 = new Thread(() -> {
-			printABC.printA();
-		});
-		Thread thread2 = new Thread(() -> {
-			printABC.printB();
-		});
-		Thread thread3 = new Thread(() -> {
-			printABC.printC();
-		});
-		thread1.start();
-		thread2.start();
-		thread3.start();
-	}
 
-	public void printA() {
-		synchronized (mon) {
-			try {
-				for (int i = 0; i < 5; i++) {
-					while (currentLetter != 'A') {
-						mon.wait();
-					}
-					System.out.print("A");
-					currentLetter = 'B';
-					mon.notifyAll();
-				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+		for (char c : SEQUENCE.toCharArray()) {
+			service.execute(() -> {
+				printABC.print(c);
+			});
 		}
+
+		service.shutdown();
 	}
 
-	public void printB() {
+	public void print(char letter) {
 		synchronized (mon) {
 			try {
-				for (int i = 0; i < 5; i++) {
-					while (currentLetter != 'B') {
+				for (int i = 0; i < n; i++) {
+					while (currentLetter != letter) {
 						mon.wait();
 					}
-					System.out.print("B");
-					currentLetter = 'C';
-					mon.notifyAll();
-				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	public void printC() {
-		synchronized (mon) {
-			try {
-				for (int i = 0; i < 5; i++) {
-					while (currentLetter != 'C') {
-						mon.wait();
+					System.out.print(letter);
+					if (index == SEQUENCE_LENGTH - 1) {
+						index = 0;
+					} else {
+						index++;
 					}
-					System.out.print("C");
-					currentLetter = 'A';
+					currentLetter = SEQUENCE.charAt(index);
 					mon.notifyAll();
 				}
 			} catch (InterruptedException e) {
